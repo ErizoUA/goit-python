@@ -127,7 +127,7 @@ class AddressBook(UserDict):
     def find_name(self, symbols: str):
 
         for name, contact in self.data.items():
-            if symbols in name:
+            if symbols.lower() in name:
                 print(contact)
 
     def find_phone(self, number: int):
