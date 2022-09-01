@@ -68,7 +68,7 @@ class Birthday(Field):
         try:
             dt.strptime(value, '%d.%m.%Y')
             self.__value = value
-        except ValueError:
+        except (ValueError, TypeError):
             raise WrongBirthdayFormat(value)
 
 
@@ -103,7 +103,7 @@ class Record:
         try:
             date = birthday.replace(year=dt.now().year)
         except ValueError:
-            date = birthday.replace(year=dt.now().year, day=date.day - 1)
+            date = birthday.replace(year=dt.now().year, day=birthday.date().day - 1)
 
         if date.date() > dt.now().date():
             return f'{(date.date() - dt.now().date()).days} days'
@@ -117,21 +117,34 @@ class AddressBook(UserDict):
         self.data[record.name.value] = record
 
     def iterator(self, quantity=10):
+        result = []
         count = 0
         for person in iter(self.data.values()):
             while count < quantity:
                 count += 1
-                yield person
+                result.append(person)
                 break
+        return result
 
     def find_name(self, symbols: str):
-
+        result = []
         for name, contact in self.data.items():
-            if symbols.lower() in name:
-                print(contact)
+            if symbols in name:
+                result.append(contact)
+
+        if len(result) == 0:
+            return 'Name has been not found'
+        else:
+            return result
 
     def find_phone(self, number: int):
+        result = []
         for contact in self.data.values():
             for numbers in contact.phones:
                 if str(number) in numbers:
-                    print(contact)
+                    result.append(contact)
+
+        if len(result) == 0:
+            return 'Phone has been not found'
+        else:
+            return result
