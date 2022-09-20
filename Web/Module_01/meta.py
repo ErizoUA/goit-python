@@ -9,7 +9,7 @@ class Meta(type):
         cls.data = data
         cls.args = args
         cls.kwargs = kwargs
-        cls.class_number = Meta.children_number
+        cls.class_number = cls.children_number
         Meta.children_number += 1
 
     def __call__(cls, data, *args, **kwargs):
