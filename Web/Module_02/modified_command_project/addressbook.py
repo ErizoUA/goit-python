@@ -65,7 +65,7 @@ class AddressBook:
         Printing whole address book as a formatted table
         """
         if self.persons:
-            ViewAllAddressBook.print_table(self.persons)
+            ViewAllAddressBook(list(self.persons.values())).print_table()
         else:
             print("No match contacts in database")
 
@@ -84,7 +84,10 @@ class AddressBook:
         """
         name = input("Enter the name: ")
         if name in self.persons:
+            print(self.persons[name])
+            print(type(self.persons[name]))
             PrintPerson.print_table(self.persons[name])
+
         else:
             print("Contact not found")
 

@@ -37,23 +37,26 @@ class PrintPerson(IPrint):
 
 class ViewAllAddressBook(IPrint):
 
-    def print_table(self: Dict[str, Person]):
+    def __init__(self, data: List[Person]):
+        self.data = data
 
+    def print_table(self):
         table = Table(show_header=True,
                       header_style="bold blue", show_lines=True)
         table.add_column("#", style="dim", width=3, justify="center")
-        table.add_column("NAME", min_width=12, justify="center")
-        table.add_column("ADDRESS", min_width=10, justify="center")
-        table.add_column("PHONE", min_width=18, justify="center")
-        table.add_column("EMAIL", min_width=18, justify="center")
-        table.add_column("BIRTHDAY", min_width=15, justify="center")
-        for idx, person in enumerate(self.values(), start=1):
-            _ = person.__dict__
-            table.add_row(
-                str(idx), f'[cyan]{_["name"]}[/cyan]',
-                f'[cyan]{_["address"]}[/cyan]', f'[cyan]{_["phone"]}[/cyan]',
-                f'[cyan]{_["email"]}[/cyan]', f'[cyan]{_["birthday"]}[/cyan]'
-            )
+
+        for column in self.data[0].__dict__:
+            table.add_column(column.upper(), style="yellow", min_width=15, justify="center")
+
+
+        for index, person in enumerate(self.data, start=1):
+            row: list[str] = []
+            row.append(str(index))
+            for column, _ in person.__dict__.items():
+                f = f'{person.__dict__.get(column)}'
+                row.append(f)
+            table.add_row(*row)
+
         console.print(table)
 
 
