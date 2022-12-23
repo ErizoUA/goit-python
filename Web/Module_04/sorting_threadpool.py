@@ -1,10 +1,11 @@
 import argparse
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import wait
 from itertools import chain
 import os
 from pathlib import Path
 import re
 from shutil import move, unpack_archive
-from threading import Thread
 from typing import List
 
 
@@ -39,7 +40,6 @@ for cyrillic, latin in zip(cyrillic_symbols, cyrillic_to_latin):
     transliteration[ord(cyrillic.upper())] = latin.upper()
 
 files_and_folders = []
-normalized_names = []
 
 
 def read_folder(folder: Path) -> List[Path]:
@@ -54,27 +54,32 @@ def read_folder(folder: Path) -> List[Path]:
                 path.rmdir()
                 continue
 
+            if path.stem in extensions:
+                continue
+
             files_and_folders.append(path)
             read_folder(path)
 
     return files_and_folders
 
 
-def normalize(path_list: List[Path]) -> None:
+def normalize(path: Path) -> None:
 
-    for path in path_list:
+    new_name = path.stem.translate(transliteration)
+    new_name = re.sub(r'\W', '_', new_name)
+    new_path = path.with_stem(f'{new_name}')
 
-        new_name = path.stem.translate(transliteration)
-        new_name = re.sub(r'\W', '_', new_name)
-        new_path = path.with_stem(f'{new_name}')
+    if path.is_dir():
+        if path == new_path:
+            return
 
-        try:
-            new_path = path.rename(new_path)
-        except FileExistsError:
-            new_path = path.with_stem(f'{new_name}_1')
-            new_path = path.rename(new_path)
+    try:
+        new_path = path.rename(new_path)
+    except FileExistsError:
+        new_path = path.with_stem(f'{new_name}_1')
+        new_path = path.rename(new_path)
 
-        normalized_names.append(new_path)
+    return new_path
 
 
 def add_unknown_ext(path_list: List[Path]) -> None:
@@ -88,24 +93,22 @@ def add_unknown_ext(path_list: List[Path]) -> None:
     extensions.update(dict(unknown=unknown_ext))
 
 
-def move_files_to_categorical_folders(files_: List[Path]) -> None:
+def move_files_to_categorical_folders(path: Path) -> None:
 
-    for path in files_:
+    for folder, ext in extensions.items():
 
-        for folder, ext in extensions.items():
+        if path.suffix in ext:
+            categorical_dir = path.parent / folder
+            categorical_dir.mkdir(parents=True, exist_ok=True)
 
-            if path.suffix in ext:
-                categorical_dir = path.parent / folder
-                categorical_dir.mkdir(parents=True, exist_ok=True)
+            if path.suffix in extensions.get('archives'):
+                new_path = categorical_dir / path.stem
+                unpack_archive(path, new_path)
+                path.unlink()
+            else:
+                move(path, categorical_dir)
 
-                if path.suffix in extensions.get('archives'):
-                    new_path = categorical_dir / path.stem
-                    unpack_archive(path, new_path)
-                    path.unlink()
-                else:
-                    move(path, categorical_dir)
-
-                break
+            break
 
 
 if __name__ == '__main__':
@@ -117,16 +120,15 @@ if __name__ == '__main__':
     files = [file for file in files_and_folders_list if file.is_file()]
     folders = [folder for folder in files_and_folders_list if folder.is_dir()][::-1]
 
-    normalized_thread = Thread(target=normalize, args=(files,))
-    normalized_thread.start()
-    normalized_thread.join()
+    with ThreadPoolExecutor(max_workers=10) as executor:
 
-    add_unknown_ext(normalized_names)
+        normalize_files = [executor.submit(normalize, file) for file in files]
+        wait(normalize_files)
 
-    move_thread = Thread(target=move_files_to_categorical_folders, args=(normalized_names,))
-    move_thread.start()
-    move_thread.join()
+        results_normalize_files = [result.result() for result in normalize_files]
+        add_unknown_ext(results_normalize_files)
 
-    normalized_names = []
-    normalize_folder = Thread(target=normalize, args=(folders,))
-    normalize_folder.start()
+        executor.map(move_files_to_categorical_folders, results_normalize_files)
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        executor.map(normalize, folders)
