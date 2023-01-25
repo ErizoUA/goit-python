@@ -1,68 +1,74 @@
-from addressbook import AddressBook
+from models.dbs import AddressBook, Diary
 from tools import autocompletion as ui
 from tools import sorting
 
+from help import helper
+
+CLI_UI = '''
+CMD HELPER: 1.Add 2.View 3.Search 4.Find 5.Sort 6.Update 7.Delete 8.Reset 9.Birthdays 10. Help 11.Exit
+'''
+
 
 def cli():
-    """
-    Comparing inputted command with existing ones
-    and performing correspondent command
-    :return: None
-    """
-    app = AddressBook('contacts.data')
+
+    addr = AddressBook('contacts.data')
+    addr.db_load()
+    diary = Diary('notes.data')
+    diary.db_load()
+
+    print(CLI_UI)
     choice = ''
     while choice != 'exit':
-        print(app)
         choice = ui.autocomplete()
         match choice:
-            case 'add':
-                print(app.add.__doc__)
-                app.add()
-            case 'add_notes':
-                print(app.add_note.__doc__)
-                app.add_note()
-            case 'view_all':
-                print(app.view_all.__doc__)
-                app.view_all()
-            case 'view_all_notes':
-                print(app.view_all_notes.__doc__)
-                app.view_all_notes()
-            case 'search':
-                print(app.search.__doc__)
-                app.search()
+            case 'add_contact':
+                print(addr.add.__doc__)
+                addr.db_save(addr.add())
+            case 'add_note':
+                print(diary.add.__doc__)
+                diary.db_save(diary.add())
+            case 'view_contacts':
+                print(addr.view.__doc__)
+                addr.view()
+            case 'view_notes':
+                print(diary.view.__doc__)
+                diary.view()
+            case 'search_contacts':
+                print(addr.search.__doc__)
+                addr.search()
             case 'search_notes':
-                print(app.search_notes.__doc__)
-                app.search_notes()
-            case 'find':
-                print(app.find.__doc__)
-                app.find()
-            case 'update':
-                print(app.update.__doc__)
-                app.update()
-            case 'update_notes':
-                print(app.update_notes.__doc__)
-                app.update_notes()
-            case 'delete':
-                print(app.delete.__doc__)
-                app.delete()
+                print(diary.search.__doc__)
+                diary.search()
+            case 'find_contact':
+                print(addr.find_by_name.__doc__)
+                addr.find_by_name()
+            case 'update_contact':
+                print(addr.update.__doc__)
+                addr.update()
+            case 'update_note':
+                print(diary.update.__doc__)
+                diary.update()
+            case 'delete_contact':
+                print(addr.delete.__doc__)
+                addr.delete()
             case 'delete_notes':
-                print(app.delete_notes.__doc__)
-                app.delete_notes()
-            case 'reset':
-                print(app.reset.__doc__)
-                app.reset()
+                print(diary.delete.__doc__)
+                diary.delete()
+            case 'reset_contacts':
+                print(addr.reset.__doc__)
+                addr.reset()
             case 'reset_notes':
-                print(app.reset_notes.__doc__)
-                app.reset_notes()
-            case 'file_sort':
+                print(diary.reset.__doc__)
+                diary.reset()
+            case 'sort_files':
                 print(sorting.perform.__doc__)
                 sorting.perform()
-            case 'sort_birthday':
-                print(app.get_birthdays.__doc__)
-                app.get_birthdays()
+            case 'birthdays':
+                print(addr.get_birthdays.__doc__)
+                addr.get_birthdays()
             case 'help':
-                print(app.help.__doc__)
-                app.help()
+                print(helper.__doc__)
+                helper()
             case 'exit':
                 print("Exiting...")
             case _:
